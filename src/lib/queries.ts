@@ -82,6 +82,8 @@ export type AttendanceSettings = {
     isWorkingDay: boolean;
     checkInTime: string;
     checkOutTime: string;
+    /** Jam Mulai Lembur "HH:mm" — opsional karena backend lama belum mengirimnya. */
+    overtimeStartTime?: string;
   }[];
 };
 
@@ -402,7 +404,7 @@ export function useOvertimeHistoryQuery() {
   });
 }
 
-/** `startTime`: "HH:mm", harus >= 18:00 (divalidasi ulang di server). */
+/** `startTime`: "HH:mm", harus >= Jam Mulai Lembur hari ini (divalidasi ulang di server). */
 export function useStartOvertimeMutation() {
   const api = useApi();
   const queryClient = useQueryClient();

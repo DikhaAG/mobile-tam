@@ -4,8 +4,8 @@ import { Modal, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { FormInput } from '@/components/form-input';
-
-const MIN_HOUR = 18; // overtime can only be started from 18:00 onward
+import { canStartOvertimeAt, overtimeStartTimeFor } from '@/lib/overtime';
+import { useSettingsQuery } from '@/lib/queries';
 
 function formatTime(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -17,8 +17,13 @@ type OvertimeStartDrawerProps = {
   onStart: (startTime: string, reason: string) => void;
 };
 
-/** Pilihan mulai lembur: sekarang (jam berjalan), atau pilih jam mulainya sendiri. */
+/**
+ * Pilihan mulai lembur: sekarang (jam berjalan), atau pilih jam mulainya sendiri.
+ * Batasnya Jam Mulai Lembur Hari Kerja hari ini dari `/api/settings`; server
+ * tetap memvalidasi ulang.
+ */
 export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStartDrawerProps) {
+  const settings = useSettingsQuery();
   const [now, setNow] = useState<Date>(() => new Date());
   const [useCustomTime, setUseCustomTime] = useState(false);
   const [customTime, setCustomTime] = useState<Date>(() => new Date());
@@ -27,13 +32,20 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
 
   useEffect(() => {
     if (!visible) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- live clock: refresh immediately on open, then tick every second
     setNow(new Date());
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, [visible]);
 
   const startTime = useCustomTime ? customTime : now;
-  const isTooEarly = startTime.getHours() < MIN_HOUR;
+  // Selama settings masih dimuat, jangan tampilkan/blokir pakai fallback 18:00 —
+  // Sabtu 15:00 bisa tertahan keliru. Server tetap memvalidasi ulang.
+  const overtimeStartTime = settings.isPending
+    ? null
+    : overtimeStartTimeFor(settings.data?.workDays, now);
+  const isTooEarly =
+    overtimeStartTime !== null && !canStartOvertimeAt(formatTime(startTime), overtimeStartTime);
 
   function resetForm() {
     setUseCustomTime(false);
@@ -70,7 +82,9 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
             Mulai Lembur
           </Text>
           <Text className="text-center text-sm text-muted-foreground">
-            Jam mulai lembur harus pukul 18:00 atau lebih larut.
+            {overtimeStartTime
+              ? `Jam mulai lembur harus pukul ${overtimeStartTime} atau lebih larut.`
+              : 'Memuat jam mulai lembur…'}
           </Text>
 
           <View className="gap-1.5">
@@ -89,7 +103,7 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
 
             {isTooEarly && (
               <Text className="text-xs text-red-600 dark:text-red-400">
-                Jam mulai harus pukul 18:00 atau lebih larut
+                Jam mulai harus pukul {overtimeStartTime} atau lebih larut
               </Text>
             )}
 
