@@ -4,12 +4,9 @@ import { Modal, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { FormInput } from '@/components/form-input';
+import { formatHourMinute } from '@/lib/date';
 import { canStartOvertimeAt, overtimeStartTimeFor } from '@/lib/overtime';
 import { useSettingsQuery } from '@/lib/queries';
-
-function formatTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
 
 type OvertimeStartDrawerProps = {
   visible: boolean;
@@ -45,7 +42,7 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
     ? null
     : overtimeStartTimeFor(settings.data?.workDays, now);
   const isTooEarly =
-    overtimeStartTime !== null && !canStartOvertimeAt(formatTime(startTime), overtimeStartTime);
+    overtimeStartTime !== null && !canStartOvertimeAt(formatHourMinute(startTime), overtimeStartTime);
 
   function resetForm() {
     setUseCustomTime(false);
@@ -68,7 +65,7 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
     }
     setReasonError(null);
 
-    onStart(formatTime(startTime), reason.trim());
+    onStart(formatHourMinute(startTime), reason.trim());
     resetForm();
   }
 
@@ -98,7 +95,7 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
                 onValueChange={(_event, date) => setCustomTime(date)}
               />
             ) : (
-              <Text className="text-2xl font-bold text-text">{formatTime(now)}</Text>
+              <Text className="text-2xl font-bold text-text">{formatHourMinute(now)}</Text>
             )}
 
             {isTooEarly && (
