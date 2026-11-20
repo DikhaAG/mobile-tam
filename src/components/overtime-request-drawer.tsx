@@ -37,7 +37,7 @@ export function OvertimeStartDrawer({ visible, onClose, onStart }: OvertimeStart
 
   const startTime = useCustomTime ? customTime : now;
   // Selama settings masih dimuat, jangan tampilkan/blokir pakai fallback 18:00 —
-  // Sabtu 15:00 bisa tertahan keliru. Server tetap memvalidasi ulang.
+  // Lembur Sabtu yang mulai 14:00 bisa tertahan keliru. Server tetap memvalidasi ulang.
   const overtimeStartTime = settings.isPending
     ? null
     : overtimeStartTimeFor(settings.data?.workDays, now);
